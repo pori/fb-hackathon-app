@@ -7,6 +7,8 @@ import HomeScreen from '../screens/HomeScreen';
 import UploadScreen from '../screens/UploadScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
+import Colors from '../constants/Colors';
+
 const HomeStack = createStackNavigator({
   Home: HomeScreen,
 });
@@ -53,8 +55,19 @@ ProfileStack.navigationOptions = {
   ),
 };
 
-export default createBottomTabNavigator({
-  HomeStack,
-  UploadStack,
-  ProfileStack,
-});
+export default createBottomTabNavigator(
+  {
+    HomeStack,
+    UploadStack,
+    ProfileStack,
+
+  },
+  {
+    navigationOptions: ({ navigation }) => ({
+      tabBarOptions: {
+        activeTintColor: Colors.tintColor,
+        inactiveTintColor: Colors.tabIconDefault,
+      },
+    })
+  },
+);
