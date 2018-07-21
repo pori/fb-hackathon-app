@@ -1,24 +1,26 @@
 import React from 'react';
 import {
   ImagePicker,
-  Permissions
+  Permissions,
+  Video,
 } from 'expo';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   Text,
-  Image,
+  Dimensions,
 } from 'react-native';
-
+import { MaterialIcons, Octicons } from '@expo/vector-icons';
 export default class LinksScreen extends React.Component {
   static navigationOptions = {
     title: 'Upload',
   };
 
   state = {
-    photos: [],
-    image: null,
+    video: null,
+    mute: false,
+    shouldPlay: true,
   };
 
   pickVid = async () => {
@@ -26,29 +28,42 @@ export default class LinksScreen extends React.Component {
     if (status === 'granted') {
       let result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
-        mediaTypes: 'All'
+        mediaTypes: 'Videos'
       });
 
       console.log(result);
 
       if (!result.cancelled) {
-        this.setState({ image: result.uri });
+        this.setState({ video: result.uri });
       }
     } else {
       throw new Error('Location permission not granted');
     }
   };
 
-  uploadVideo = (vid) => {
-    const ref = firebase.firestore().collection('videos');
-    this.ref.add({
-      uri: vid.uri,
-      type: vid.type, // or photo.type
-      name: vid.timestamp,
-    });
+  handlePlayAndPause = () => {
+    this.setState((prevState) => ({
+      shouldPlay: !prevState.shouldPlay
+    }));
   };
 
+  handleVolume = () => {
+    this.setState(prevState => ({
+      mute: !prevState.mute,
+    }));
+  };
+
+  // uploadVideo = (vid) => {
+  //   firebase.firestore().collection('videos')
+  //     .add({
+  //     uri: vid.uri,
+  //     type: vid.type, // or photo.type
+  //     name: vid.timestamp,
+  //   });
+  // };
+
   render() {
+    const { width } = Dimensions.get('window');
     return (
       <View style={styles.container}>
         <TouchableOpacity
@@ -58,8 +73,31 @@ export default class LinksScreen extends React.Component {
           <Text style={[styles.btnText]}>{'Share A Video'.toUpperCase()}</Text>
           {this.props.iconRight}
         </TouchableOpacity>
-        {this.state.image &&
-        <Image source={{ uri: this.state.image }} style={{ width: 200, height: 200 }} />}
+        {this.state.video &&
+          <View>
+            <Video
+              source={{ uri: this.state.video }}
+              shouldPlay={this.state.shouldPlay}
+              resizeMode="cover"
+              style={{ width, height: 300 }}
+              isMuted={this.state.mute}
+            />
+            <View style={styles.controlBar}>
+              <MaterialIcons
+                name={this.state.mute ? "volume-mute" : "volume-up"}
+                size={45}
+                color="white"
+                onPress={this.handleVolume}
+              />
+              <MaterialIcons
+                name={this.state.shouldPlay ? "pause" : "play-arrow"}
+                size={45}
+                color="white"
+                onPress={this.handlePlayAndPause}
+              />
+            </View>
+          </View>
+        }
       </View>
     );
   }
@@ -67,12 +105,12 @@ export default class LinksScreen extends React.Component {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 15,
     backgroundColor: 'lavender',
-    padding: 16,
     justifyContent: 'center',
+    flex: 1,
   },
   button: {
+    margin: 16,
     backgroundColor: '#9370DB',
     borderRadius: 2,
     shadowColor: 'black',
@@ -98,4 +136,15 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     marginRight: 4,
   },
+  controlBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 45,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  }
 });
