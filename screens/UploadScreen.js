@@ -4,6 +4,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
+  CameraRoll,
+  ScrollView,
+  Image,
+  TouchableHighlight,
 } from 'react-native';
 
 export default class LinksScreen extends React.Component {
@@ -11,16 +15,56 @@ export default class LinksScreen extends React.Component {
     title: 'Upload',
   };
 
+  state = {
+    photos: [],
+  };
+
+  getVids = () => {
+    CameraRoll.getPhotos({
+      first: 20,
+      assetType: 'Videos',
+    }).then(r => {
+      this.setState({ photos: r.edges });
+    });
+  };
+
+  uploadVideo = (vid) => {
+    const ref = firebase.firestore().collection('videos');
+    this.ref.add({
+      uri: vid.uri,
+      type: vid.type, // or photo.type
+      name: vid.timestamp,
+    });
+  };
+
   render() {
     return (
       <View style={styles.container}>
         <TouchableOpacity
           style={[styles.button]}
-          // onPress={this.props.onPress}
+          onPress={this.getVids}
         >
           <Text style={[styles.btnText]}>{'Share A Video'.toUpperCase()}</Text>
           {this.props.iconRight}
         </TouchableOpacity>
+        <ScrollView>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', flexGrow: 1 }}>
+            {this.state.photos.map((p, i) => {
+              return (
+                <Image
+                  key={i}
+                  style={{
+                    width: 124,
+                    height: 124,
+                    margin: 8,
+                  }}
+                  onPress={() => this.uploadVideo(p.node.image.uri)}
+                  source={{ uri: p.node.image.uri }}
+                />
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -28,7 +72,7 @@ export default class LinksScreen extends React.Component {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1,
     paddingTop: 15,
     backgroundColor: 'lavender',
     padding: 16,
@@ -59,5 +103,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
     marginRight: 4,
-  }
+  },
 });
