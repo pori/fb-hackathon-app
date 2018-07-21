@@ -1,13 +1,14 @@
 import React from 'react';
 import {
+  ImagePicker,
+  Permissions
+} from 'expo';
+import {
   View,
   StyleSheet,
   TouchableOpacity,
   Text,
-  CameraRoll,
-  ScrollView,
   Image,
-  TouchableHighlight,
 } from 'react-native';
 
 export default class LinksScreen extends React.Component {
@@ -17,15 +18,25 @@ export default class LinksScreen extends React.Component {
 
   state = {
     photos: [],
+    image: null,
   };
 
-  getVids = () => {
-    CameraRoll.getPhotos({
-      first: 20,
-      assetType: 'Videos',
-    }).then(r => {
-      this.setState({ photos: r.edges });
-    });
+  pickVid = async () => {
+    const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
+    if (status === 'granted') {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        mediaTypes: 'All'
+      });
+
+      console.log(result);
+
+      if (!result.cancelled) {
+        this.setState({ image: result.uri });
+      }
+    } else {
+      throw new Error('Location permission not granted');
+    }
   };
 
   uploadVideo = (vid) => {
@@ -42,29 +53,13 @@ export default class LinksScreen extends React.Component {
       <View style={styles.container}>
         <TouchableOpacity
           style={[styles.button]}
-          onPress={this.getVids}
+          onPress={this.pickVid}
         >
           <Text style={[styles.btnText]}>{'Share A Video'.toUpperCase()}</Text>
           {this.props.iconRight}
         </TouchableOpacity>
-        <ScrollView>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', flexGrow: 1 }}>
-            {this.state.photos.map((p, i) => {
-              return (
-                <Image
-                  key={i}
-                  style={{
-                    width: 124,
-                    height: 124,
-                    margin: 8,
-                  }}
-                  onPress={() => this.uploadVideo(p.node.image.uri)}
-                  source={{ uri: p.node.image.uri }}
-                />
-              );
-            })}
-          </View>
-        </ScrollView>
+        {this.state.image &&
+        <Image source={{ uri: this.state.image }} style={{ width: 200, height: 200 }} />}
       </View>
     );
   }
@@ -72,7 +67,6 @@ export default class LinksScreen extends React.Component {
 
 const styles = StyleSheet.create({
   container: {
-    // flex: 1,
     paddingTop: 15,
     backgroundColor: 'lavender',
     padding: 16,
