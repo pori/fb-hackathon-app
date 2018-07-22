@@ -1,4 +1,6 @@
 import React from 'react';
+import firebase from 'firebase';
+import '@firebase/firestore';
 import {
   ImagePicker,
   Permissions,
@@ -11,7 +13,12 @@ import {
   Text,
   Dimensions,
 } from 'react-native';
+import uuid from 'uuid';
 import { MaterialIcons, Octicons } from '@expo/vector-icons';
+const firestore = firebase.firestore();
+const settings = {/* your settings... */ timestampsInSnapshots: true};
+firestore.settings(settings);
+
 export default class LinksScreen extends React.Component {
   static navigationOptions = {
     title: 'Upload',
@@ -34,7 +41,7 @@ export default class LinksScreen extends React.Component {
       console.log(result);
 
       if (!result.cancelled) {
-        this.setState({ video: result.uri });
+        this.setState({ video: result });
       }
     } else {
       throw new Error('Location permission not granted');
@@ -53,13 +60,39 @@ export default class LinksScreen extends React.Component {
     }));
   };
 
-  // uploadVideo = (vid) => {
-  //   firebase.firestore().collection('videos')
-  //     .add({
-  //     uri: vid.uri,
-  //     type: vid.type, // or photo.type
-  //     name: vid.timestamp,
-  //   });
+  uploadVid = async () =>  {
+    const response = await fetch(this.state.video.uri);
+    const blob = await response.blob();
+    const ref = firebase
+      .storage()
+      .ref('videos')
+      .child(uuid.v4());
+    await ref.put(blob);
+    return ref.getDownloadURL();
+  };
+
+  saveVid = (downloadURL) => {
+    console.log('downloadURL', downloadURL); // eslint-disable-line no-console
+    firestore.collection('videos').add({
+      uri: downloadURL,
+      type: this.state.video.type, // or photo.type
+      // name: this.state.video.timestamp,
+    });
+  };
+
+  handleUploadVid = async () => {
+    const downloadURL = await this.uploadVid();
+    this.saveVid(downloadURL);
+    // this.setState({ image: uploadUrl });
+  };
+  // uploadVid = (vid) => {
+  //
+  //   // firebase.firestore().collection('videos')
+  //   //   .add({
+  //   //   uri: vid.uri,
+  //   //   type: vid.type, // or photo.type
+  //   //   name: vid.timestamp,
+  //   // });
   // };
 
   render() {
@@ -70,32 +103,41 @@ export default class LinksScreen extends React.Component {
           style={[styles.button]}
           onPress={this.pickVid}
         >
-          <Text style={[styles.btnText]}>{'Share A Video'.toUpperCase()}</Text>
+          <Text style={[styles.btnText]}>{!this.state.video ? 'Share A Video'.toUpperCase() : 'Choose A Different Video'.toUpperCase()}</Text>
           {this.props.iconRight}
         </TouchableOpacity>
         {this.state.video &&
           <View>
-            <Video
-              source={{ uri: this.state.video }}
-              shouldPlay={this.state.shouldPlay}
-              resizeMode="cover"
-              style={{ width, height: 300 }}
-              isMuted={this.state.mute}
-            />
-            <View style={styles.controlBar}>
-              <MaterialIcons
-                name={this.state.mute ? "volume-mute" : "volume-up"}
-                size={45}
-                color="white"
-                onPress={this.handleVolume}
+            <View>
+              <Video
+                source={{ uri: this.state.video.uri }}
+                shouldPlay={this.state.shouldPlay}
+                resizeMode="cover"
+                style={{ width, height: 300 }}
+                isMuted={this.state.mute}
               />
-              <MaterialIcons
-                name={this.state.shouldPlay ? "pause" : "play-arrow"}
-                size={45}
-                color="white"
-                onPress={this.handlePlayAndPause}
-              />
+              <View style={styles.controlBar}>
+                <MaterialIcons
+                  name={this.state.mute ? "volume-mute" : "volume-up"}
+                  size={45}
+                  color="white"
+                  onPress={this.handleVolume}
+                />
+                <MaterialIcons
+                  name={this.state.shouldPlay ? "pause" : "play-arrow"}
+                  size={45}
+                  color="white"
+                  onPress={this.handlePlayAndPause}
+                />
+              </View>
             </View>
+            <TouchableOpacity
+              style={[styles.button]}
+              onPress={this.handleUploadVid}
+            >
+              <Text style={[styles.btnText]}>{'Upload This Video'.toUpperCase()}</Text>
+              {this.props.iconRight}
+            </TouchableOpacity>
           </View>
         }
       </View>
